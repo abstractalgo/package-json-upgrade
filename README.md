@@ -2,6 +2,8 @@
 
 Shows available updates in package.json. Offers quick actions to guide you in your updating.
 
+Forked from: https://github.com/pgsandstrom/package-json-upgrade
+
 ## Preview
 
 The available updates are shown as color coded decoration to the right of each line.
@@ -44,4 +46,4 @@ Several more configurations exists. Check out your vscode settings for the compl
 
 ## Links
 
-[Marketplace](https://marketplace.visualstudio.com/items?itemName=codeandstuff.package-json-upgrade)
+[Marketplace](https://marketplace.visualstudio.com/items?itemName=abstractalgo.package-json-upgrade)
