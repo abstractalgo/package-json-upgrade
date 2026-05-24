@@ -22,12 +22,8 @@ export class UpdateAction implements vscode.CodeActionProvider {
     }
 
     const dep = getDependencyFromLine(document.getText(), range.start.line, document.uri.fsPath)
-    if (dep === undefined) {
-      return
-    }
-
-    // Skip quick-fix upgrades for workspace/catalog dependencies — the version lives elsewhere
-    if (dep.isWorkspace === true || dep.isCatalog === true) {
+    // Skip quick-fix upgrades for missing/workspace/catalog dependencies
+    if (dep === undefined || dep.isWorkspace === true || dep.isCatalog === true) {
       return
     }
 

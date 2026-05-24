@@ -105,11 +105,7 @@ const findPnpmWorkspaceRoot = (packageJsonPath: string): string | undefined => {
 
   let dir = path.dirname(packageJsonPath)
   while (dir !== path.dirname(dir)) {
-    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yaml'))) {
-      workspaceRootCache.set(packageJsonPath, dir)
-      return dir
-    }
-    if (fs.existsSync(path.join(dir, 'pnpm-workspace.yml'))) {
+    if (findWorkspaceFile(dir) !== undefined) {
       workspaceRootCache.set(packageJsonPath, dir)
       return dir
     }
@@ -166,13 +162,11 @@ const getWorkspacePackages = (workspaceRoot: string): Map<string, string> => {
 }
 
 const findWorkspaceFile = (workspaceRoot: string): string | undefined => {
-  const yamlPath = path.join(workspaceRoot, 'pnpm-workspace.yaml')
-  if (fs.existsSync(yamlPath)) {
-    return yamlPath
-  }
-  const ymlPath = path.join(workspaceRoot, 'pnpm-workspace.yml')
-  if (fs.existsSync(ymlPath)) {
-    return ymlPath
+  for (const ext of ['.yaml', '.yml']) {
+    const filePath = path.join(workspaceRoot, `pnpm-workspace${ext}`)
+    if (fs.existsSync(filePath)) {
+      return filePath
+    }
   }
   return undefined
 }
