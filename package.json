@@ -116,7 +116,7 @@
     "test-node": "node --import tsx --test src/test-node/*.test.ts",
     "test": "npm run test-node && npm run test-vscode",
     "format": "prettier --write \"{,!(.vscode|.vscode-test|out|node_modules)/**/}!(package-lock).{json,md,js,jsx,ts,tsx,css,scss}\"",
-    "lint": "eslint --ext .ts --ext .tsx --fix src",
+    "lint": "eslint --fix \"src/**/*.{ts,tsx}\"",
     "package": "vsce package",
     "pre-commit": "lint-staged",
     "pre-push": "npm run lint && npm run typecheck && npm run test",
@@ -142,6 +142,7 @@
     "tinyglobby": "0.2.16"
   },
   "devDependencies": {
+    "@eslint/js": "10.0.1",
     "@types/mocha": "10.0.10",
     "@types/node": "22.19.19",
     "@types/npm-registry-fetch": "8.0.9",
@@ -150,9 +151,9 @@
     "@vscode/test-cli": "0.0.12",
     "@vscode/test-electron": "2.5.2",
     "@vscode/vsce": "3.9.1",
-    "eslint": "9.39.2",
-    "eslint-plugin-no-only-tests": "3.3.0",
-    "eslint-plugin-simple-import-sort": "12.1.1",
+    "eslint": "10.4.0",
+    "eslint-plugin-no-only-tests": "3.4.0",
+    "eslint-plugin-simple-import-sort": "13.0.0",
     "husky": "9.1.7",
     "lint-staged": "17.0.5",
     "prettier": "3.8.3",
@@ -160,7 +161,7 @@
     "ts-node": "10.9.2",
     "tsx": "4.22.3",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.53.0",
+    "typescript-eslint": "8.60.0",
     "webpack": "5.107.2",
     "webpack-cli": "7.0.3"
   }

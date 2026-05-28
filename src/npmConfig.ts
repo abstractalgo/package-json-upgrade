@@ -25,7 +25,7 @@ export const getNpmConfig = (packageJsonPath: string): npmRegistryFetch.Options 
         cache: null,
         prefix: path.dirname(packageJsonPath),
       })
-      conf = result.config.snapshot as npmRegistryFetch.Options
+      conf = result.config.snapshot
       packageJsonPathToConfMap[packageJsonPath] = conf
     }
 
