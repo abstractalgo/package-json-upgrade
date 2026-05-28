@@ -21,10 +21,12 @@ export class UpdateAction implements vscode.CodeActionProvider {
       return
     }
 
-    const dep = getDependencyFromLine(document.getText(), range.start.line)
-    if (dep === undefined) {
+    const dep = getDependencyFromLine(document.getText(), range.start.line, document.uri.fsPath)
+    // Skip quick-fix upgrades for missing/workspace/catalog dependencies
+    if (dep === undefined || dep.isWorkspace === true || dep.isCatalog === true) {
       return
     }
+
     const npmCache = getCachedNpmData(dep.dependencyName)
     if (npmCache === undefined || npmCache.item === undefined) {
       return
