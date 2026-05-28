@@ -1,0 +1,6 @@
+packages:
+  # main packages
+  - 'packages/*'
+  - "apps/*"
+  # components are nested
+  - components/**

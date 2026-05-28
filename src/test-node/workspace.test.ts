@@ -1,27 +1,12 @@
 import { before, describe, test } from 'node:test'
 
 import * as assert from 'assert'
-import * as fs from 'fs'
 import * as path from 'path'
 
 import { clearWorkspaceCache, resolveCatalogVersion, resolveWorkspaceVersion } from '../workspace'
 
 const testdataDir = path.resolve('./src/test-node/testdata')
 const catalogWorkspaceDir = path.resolve('./src/test-node/testdata/catalog-workspace')
-
-const writeYaml = (content: string, fileName = 'pnpm-workspace.yaml') => {
-  fs.writeFileSync(path.join(testdataDir, fileName), content)
-  clearWorkspaceCache()
-}
-
-const restoreYaml = () => {
-  fs.writeFileSync(
-    path.join(testdataDir, 'pnpm-workspace.yaml'),
-    'packages:\n  - \'packages/*\'\n  - "apps/*"\n  - components/**\n',
-  )
-  fs.rmSync(path.join(testdataDir, 'pnpm-workspace.yml'), { force: true })
-  clearWorkspaceCache()
-}
 
 describe('workspace', () => {
   before(() => {
@@ -110,39 +95,21 @@ describe('workspace', () => {
   })
 
   test('should handle yaml with comments and mixed quotes', () => {
-    writeYaml(`packages:
-  # main packages
-  - 'packages/*'
-  - "apps/*"
-  # components are nested
-  - components/**
-`)
-
-    try {
-      const result = resolveWorkspaceVersion(
-        'workspace:*',
-        'pkg-b',
-        path.join(testdataDir, 'packages', 'consumer', 'package.json'),
-      )
-      assert.deepStrictEqual(result, { version: '2.5.0', isWorkspace: true })
-    } finally {
-      restoreYaml()
-    }
+    const result = resolveWorkspaceVersion(
+      'workspace:*',
+      'pkg-b',
+      path.join(testdataDir, 'ws-comments', 'packages', 'consumer', 'package.json'),
+    )
+    assert.deepStrictEqual(result, { version: '2.5.0', isWorkspace: true })
   })
 
   test('should handle empty packages array', () => {
-    writeYaml('packages:\n')
-
-    try {
-      const result = resolveWorkspaceVersion(
-        'workspace:*',
-        'pkg-a',
-        path.join(testdataDir, 'packages', 'consumer', 'package.json'),
-      )
-      assert.strictEqual(result, undefined)
-    } finally {
-      restoreYaml()
-    }
+    const result = resolveWorkspaceVersion(
+      'workspace:*',
+      'pkg-a',
+      path.join(testdataDir, 'ws-empty', 'packages', 'consumer', 'package.json'),
+    )
+    assert.strictEqual(result, undefined)
   })
 
   test('should use cache on repeated lookups', () => {
@@ -232,45 +199,28 @@ describe('workspace', () => {
   })
 
   test('should support pnpm-workspace.yml extension', () => {
-    // Remove the .yaml file so only .yml is used
-    fs.rmSync(path.join(testdataDir, 'pnpm-workspace.yaml'), { force: true })
-    fs.writeFileSync(
-      path.join(testdataDir, 'pnpm-workspace.yml'),
-      'packages:\n  - \'packages/*\'\n  - "apps/*"\n  - components/**\n',
+    // ws-yml only contains a pnpm-workspace.yml (no .yaml) so this exercises the .yml fallback
+    const result = resolveWorkspaceVersion(
+      'workspace:*',
+      'app',
+      path.join(testdataDir, 'ws-yml', 'packages', 'consumer', 'package.json'),
     )
-    clearWorkspaceCache()
-
-    try {
-      const result = resolveWorkspaceVersion(
-        'workspace:*',
-        'app',
-        path.join(testdataDir, 'packages', 'consumer', 'package.json'),
-      )
-      assert.deepStrictEqual(result, { version: '0.1.0', isWorkspace: true })
-    } finally {
-      restoreYaml()
-    }
+    assert.deepStrictEqual(result, { version: '0.1.0', isWorkspace: true })
   })
 
   test('should gracefully handle invalid yaml', () => {
-    writeYaml('this is not { valid yaml ::::')
+    const result = resolveWorkspaceVersion(
+      'workspace:*',
+      'pkg-a',
+      path.join(testdataDir, 'ws-invalid', 'packages', 'consumer', 'package.json'),
+    )
+    assert.strictEqual(result, undefined)
 
-    try {
-      const result = resolveWorkspaceVersion(
-        'workspace:*',
-        'pkg-a',
-        path.join(testdataDir, 'packages', 'consumer', 'package.json'),
-      )
-      assert.strictEqual(result, undefined)
-
-      const catalogResult = resolveCatalogVersion(
-        'catalog:',
-        'react',
-        path.join(testdataDir, 'packages', 'consumer', 'package.json'),
-      )
-      assert.strictEqual(catalogResult, undefined)
-    } finally {
-      restoreYaml()
-    }
+    const catalogResult = resolveCatalogVersion(
+      'catalog:',
+      'react',
+      path.join(testdataDir, 'ws-invalid', 'packages', 'consumer', 'package.json'),
+    )
+    assert.strictEqual(catalogResult, undefined)
   })
 })
