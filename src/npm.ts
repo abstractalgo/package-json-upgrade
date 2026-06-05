@@ -173,9 +173,17 @@ export const getPossibleUpgradesWithIgnoredVersions = (
     return { validVersion: false, existingVersion: false }
   }
 
-  const existingVersion = Object.values(npmData.versions).some((version) =>
-    eq(version.version, coercedVersion),
-  )
+  // A range such as "~5.0.0" or "^5.0.0" is "found" as long as some published
+  // version satisfies it, even if the exact base version (e.g. 5.0.0) was never
+  // published. Fall back to exact equality when the raw version isn't a valid range.
+  const isRange = validRange(rawCurrentVersion) !== null
+  const existingVersion = Object.values(npmData.versions).some((version) => {
+    if (isRange) {
+      return satisfies(version.version, rawCurrentVersion)
+    } else {
+      return eq(version.version, coercedVersion)
+    }
+  })
 
   const possibleUpgrades = getRawPossibleUpgradeList(
     npmData,

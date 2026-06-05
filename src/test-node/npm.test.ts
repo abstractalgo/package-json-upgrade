@@ -402,6 +402,37 @@ describe('Npm Test Suite', () => {
     assert.deepStrictEqual(result, expected)
   })
 
+  // Mirrors TypeScript's 5.0 line, which started at 5.0.2 (5.0.0/5.0.1 were never published).
+  const tildeBaseMissingData: NpmData = {
+    'dist-tags': { latest: '6.0.0' },
+    versions: {
+      '5.0.2': { name: 'dependencyName', version: '5.0.2' },
+      '5.0.3': { name: 'dependencyName', version: '5.0.3' },
+      '5.0.4': { name: 'dependencyName', version: '5.0.4' },
+      '6.0.0': { name: 'dependencyName', version: '6.0.0' },
+    },
+  }
+
+  test('existingVersion should be true for a tilde range whose exact base version is unpublished', () => {
+    // ~5.0.0 is satisfied by 5.0.4 even though 5.0.0 was never published.
+    const result: DependencyUpdateInfo = getPossibleUpgrades(
+      tildeBaseMissingData,
+      '~5.0.0',
+      'dependencyName',
+    )
+    assert.strictEqual(result.existingVersion, true)
+    assert.deepStrictEqual(result.patch, { name: 'dependencyName', version: '5.0.4' })
+  })
+
+  test('existingVersion should be true for a caret range whose exact base version is unpublished', () => {
+    const result: DependencyUpdateInfo = getPossibleUpgrades(
+      tildeBaseMissingData,
+      '^5.0.0',
+      'dependencyName',
+    )
+    assert.strictEqual(result.existingVersion, true)
+  })
+
   test('version such as 1.x should be correctly identified as a current version', () => {
     const result: DependencyUpdateInfo = getPossibleUpgrades(testData, '1.x', 'dependencyName')
     const expected: DependencyUpdateInfo = {
