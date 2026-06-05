@@ -45,3 +45,5 @@ Several more configurations exists. Check out your vscode settings for the compl
 ## Links
 
 [Marketplace](https://marketplace.visualstudio.com/items?itemName=codeandstuff.package-json-upgrade)
+
+[Open VSX](https://open-vsx.org/extension/codeandstuff/package-json-upgrade)

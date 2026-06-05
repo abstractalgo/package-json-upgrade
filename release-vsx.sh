@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-# Add the release token to .env.local as variable TOKEN. Like this:
-# TOKEN=my_token
+# Add the release token to .env.local as variable OPEN_VSX_RELEASE_TOKEN. Like this:
+# OPEN_VSX_RELEASE_TOKEN=my_token
 
 if [ ! -f .env.local ]; then
     echo ".env.local file not found!"
@@ -17,18 +17,18 @@ VER=$(node release-vsx-helper.js $DIRTY_VER)
 DIRTY_NAME=$(cat package.json | grep \"name\")
 NAME=$(node release-vsx-helper.js $DIRTY_NAME)
 
-COMMAND="npx ovsx publish $NAME-$VER.vsix -p $TOKEN"
+COMMAND="npx ovsx publish $NAME-$VER.vsix -p $OPEN_VSX_RELEASE_TOKEN"
 
 echo
 echo "NAME: $NAME"
 echo "VERSION: $VER"
-echo "TOKEN: $TOKEN"
+echo "OPEN_VSX_RELEASE_TOKEN: $OPEN_VSX_RELEASE_TOKEN"
 echo
 echo "This command will be run:"
 echo
 echo $COMMAND
 echo
-read -p "Is that okay? (y/n) " -n 1 -r
+read -p "Is that okay? (y/N) " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]
 then
