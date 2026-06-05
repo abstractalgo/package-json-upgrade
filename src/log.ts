@@ -2,6 +2,7 @@
 let channel: import('vscode').LogOutputChannel | undefined
 
 // REMEMBER: If log is not showing, then run command 'Developer:Set LogLevel' in vscode, and set to show 'Debug'.
+// ALSO REMEMBER: This type of loggin is shown in the "OUTPUT" channel in the test window, not this window.
 
 export function initLogger(context: import('vscode').ExtensionContext) {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
