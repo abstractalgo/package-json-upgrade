@@ -8,6 +8,7 @@ import {
   getLatestVersionWithIgnoredVersions,
   getPossibleUpgrades,
   getPossibleUpgradesWithIgnoredVersions,
+  isRegistryVersion,
   NpmData,
   VersionData,
 } from '../npm'
@@ -444,5 +445,62 @@ describe('Npm Test Suite', () => {
       existingVersion: true,
     }
     assert.deepStrictEqual(result, expected)
+  })
+})
+
+describe('isRegistryVersion', () => {
+  test('plain semver ranges are fetched from the registry', () => {
+    assert.strictEqual(isRegistryVersion('1.2.3'), true)
+    assert.strictEqual(isRegistryVersion('^1.2.3'), true)
+    assert.strictEqual(isRegistryVersion('~1.2.3'), true)
+    assert.strictEqual(isRegistryVersion('>=1.2.3'), true)
+    assert.strictEqual(isRegistryVersion('1.x'), true)
+    assert.strictEqual(isRegistryVersion('1.2'), true)
+    assert.strictEqual(isRegistryVersion('v1.2.3'), true)
+    assert.strictEqual(isRegistryVersion('1.2.3-beta.1'), true)
+    assert.strictEqual(isRegistryVersion('1.2.3 - 2.0.0'), true)
+  })
+
+  // workspace: refers to a local monorepo package, never the registry. All forms
+  // must be skipped so they don't trigger a fetch and show "Dependency not found".
+  test('all workspace: forms are skipped', () => {
+    assert.strictEqual(isRegistryVersion('workspace:*'), false)
+    assert.strictEqual(isRegistryVersion('workspace:^'), false)
+    assert.strictEqual(isRegistryVersion('workspace:~'), false)
+    assert.strictEqual(isRegistryVersion('workspace:whatever'), false)
+    // These coerce to a valid semver, so they would slip through a naive coerce check.
+    assert.strictEqual(isRegistryVersion('workspace:1.2.3'), false)
+    assert.strictEqual(isRegistryVersion('workspace:^1.2.3'), false)
+  })
+
+  test('catalog: references are skipped', () => {
+    // By the time refreshPackageJsonData calls this, resolvable catalog refs have
+    // already been replaced with their real version. An unresolved "catalog:" must
+    // not be fetched. "catalog:react17" coerces to "17.0.0", so a naive coerce
+    // check would let it through.
+    assert.strictEqual(isRegistryVersion('catalog:'), false)
+    assert.strictEqual(isRegistryVersion('catalog:react17'), false)
+  })
+
+  // git/github/url/file specs embed a version that coerce() happily extracts (e.g.
+  // "4.17.0" out of the github spec below), but they don't resolve from the
+  // registry, so they must be skipped.
+  test('git, github and url specs are skipped', () => {
+    assert.strictEqual(isRegistryVersion('github:lodash/lodash#v4.17.0'), false)
+    assert.strictEqual(isRegistryVersion('lodash/lodash#v4.17.0'), false)
+    assert.strictEqual(isRegistryVersion('user/repo#semver:^1.2.3'), false)
+    assert.strictEqual(isRegistryVersion('git+ssh://git@github.com/user/repo.git#1.2.3'), false)
+    assert.strictEqual(isRegistryVersion('file:./foo.tgz'), false)
+    assert.strictEqual(isRegistryVersion('npm:foo@1.2.3'), false)
+  })
+
+  // Bare wildcards and blanks aren't fetched today (there's no concrete version to
+  // compare against); preserve that even though validRange normalizes them to "*".
+  test('bare wildcards and empty versions are skipped', () => {
+    assert.strictEqual(isRegistryVersion('*'), false)
+    assert.strictEqual(isRegistryVersion('x'), false)
+    assert.strictEqual(isRegistryVersion('X'), false)
+    assert.strictEqual(isRegistryVersion(''), false)
+    assert.strictEqual(isRegistryVersion('latest'), false)
   })
 })

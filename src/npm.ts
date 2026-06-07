@@ -264,6 +264,23 @@ const isVersionIgnored = (version: VersionData, dependencyName: string, ignoredV
   return satisfies(version.version, ignoredVersion)
 }
 
+// Decides whether a version string refers to something we can look up in the npm
+// registry. Non-registry versions are skipped so we don't try to fetch them and
+// end up showing "Dependency not found".
+//
+// We require two checks because each catches what the other misses:
+//   - validRange() rejects everything that isn't a plain semver range: pnpm
+//     "workspace:"/"catalog:" protocols, "file:"/"link:" specs, git/url/github
+//     specs, and local paths. coerce() alone is too lenient here — it would happily
+//     extract "4.17.0" from "github:lodash/lodash#v4.17.0" (or "17.0.0" from
+//     "catalog:react17") and trigger a bogus fetch.
+//   - coerce() rejects the bare wildcards and empty/blank strings ("*", "x", "X",
+//     "") that validRange() normalizes to "*". We don't fetch those today and
+//     fetching them would only produce noise (no real upgrade to show).
+export const isRegistryVersion = (version: string): boolean => {
+  return validRange(version) != null && valid(coerce(version)) != null
+}
+
 export const refreshPackageJsonData = (
   packageJsonString: string,
   packageJsonFilePath: string,
@@ -286,16 +303,7 @@ export const refreshPackageJsonData = (
         }
         return [dependencyName, version] as const
       })
-      .filter(([_dependencyName, version]) => {
-        // TODO I made a release without "coerce" here and test suite didnt detect it. Fix so this is properly tested
-        if (valid(coerce(version)) == null) {
-          // Example of invalid version is "file:./foo.tgz", or maybe fetched from url or git-path or something else.
-          // When the version isn't a semver, then we should assume it isnt fetched from a registry, so we should bail on it.
-          return false
-        } else {
-          return true
-        }
-      })
+      .filter(([_dependencyName, version]) => isRegistryVersion(version))
       .map(([dependencyName, _version]) => {
         const cache = npmCache[dependencyName]
         if (
