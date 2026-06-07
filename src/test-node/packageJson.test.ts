@@ -279,7 +279,7 @@ describe('packageJson', () => {
     ])
   })
 
-  test('should skip workspace dependencies when no packageJsonPath is provided', () => {
+  test('should pass workspace: dependencies through untouched (no registry lookup)', () => {
     setConfig({
       ...getConfig(),
       dependencyGroups: ['dependencies'],
@@ -296,79 +296,19 @@ describe('packageJson', () => {
     const result = getDependencyInformation(packageJson)
     const deps = result.map((r) => r.deps).flat()
 
-    assert.strictEqual(deps.length, 1)
-    assert.strictEqual(deps[0].dependencyName, 'express')
+    // workspace: refers to a local package, not the registry. We keep it in the
+    // list with its raw version (and no special flag); the npm refresh path drops
+    // it because "workspace:*" isn't a valid semver, so it never gets decorated.
+    assert.strictEqual(deps.length, 2)
 
-    setConfig({
-      ...getConfig(),
-      dependencyGroups: ['dependencies', 'devDependencies'],
-    })
-  })
-
-  test('should resolve workspace dependencies when packageJsonPath is provided', () => {
-    clearWorkspaceCache()
-    setConfig({
-      ...getConfig(),
-      dependencyGroups: ['dependencies'],
-    })
-
-    const packageJson = JSON.stringify({
-      name: 'consumer',
-      dependencies: {
-        'pkg-a': 'workspace:*',
-        'pkg-b': 'workspace:^',
-        express: '4.18.2',
-      },
-    })
-
-    const packageJsonPath = path.resolve('./src/test-node/testdata/packages/consumer/package.json')
-    const result = getDependencyInformation(packageJson, packageJsonPath)
-    const deps = result.map((r) => r.deps).flat()
-
-    assert.strictEqual(deps.length, 3)
-
-    const pkgA = deps.find((d) => d.dependencyName === 'pkg-a')
-    assert.ok(pkgA)
-    assert.strictEqual(pkgA.currentVersion, '1.0.0')
-    assert.strictEqual(pkgA.isWorkspace, true)
-
-    const pkgB = deps.find((d) => d.dependencyName === 'pkg-b')
-    assert.ok(pkgB)
-    assert.strictEqual(pkgB.currentVersion, '2.5.0')
-    assert.strictEqual(pkgB.isWorkspace, true)
+    const lodash = deps.find((d) => d.dependencyName === 'lodash')
+    assert.ok(lodash)
+    assert.strictEqual(lodash.currentVersion, 'workspace:*')
+    assert.strictEqual(lodash.isCatalog, undefined)
 
     const express = deps.find((d) => d.dependencyName === 'express')
     assert.ok(express)
     assert.strictEqual(express.currentVersion, '4.18.2')
-    assert.strictEqual(express.isWorkspace, undefined)
-
-    setConfig({
-      ...getConfig(),
-      dependencyGroups: ['dependencies', 'devDependencies'],
-    })
-  })
-
-  test('should skip workspace dependencies that cannot be resolved', () => {
-    clearWorkspaceCache()
-    setConfig({
-      ...getConfig(),
-      dependencyGroups: ['dependencies'],
-    })
-
-    const packageJson = JSON.stringify({
-      name: 'consumer',
-      dependencies: {
-        'non-existent-pkg': 'workspace:*',
-        express: '4.18.2',
-      },
-    })
-
-    const packageJsonPath = path.resolve('./src/test-node/testdata/packages/consumer/package.json')
-    const result = getDependencyInformation(packageJson, packageJsonPath)
-    const deps = result.map((r) => r.deps).flat()
-
-    assert.strictEqual(deps.length, 1)
-    assert.strictEqual(deps[0].dependencyName, 'express')
 
     setConfig({
       ...getConfig(),

@@ -2,7 +2,7 @@ import { findNodeAtLocation, Node, parseTree } from 'jsonc-parser'
 import * as vscode from 'vscode'
 
 import { getConfig } from './config'
-import { resolveCatalogVersion, resolveWorkspaceVersion } from './workspace'
+import { resolveCatalogVersion } from './workspace'
 
 export interface DependencyGroups {
   startLine: number
@@ -13,7 +13,6 @@ export interface Dependency {
   dependencyName: string
   currentVersion: string
   line: number
-  isWorkspace?: boolean
   isCatalog?: boolean
 }
 
@@ -123,22 +122,6 @@ function toDependency(
       }
     }
     return null
-  }
-
-  if (version.startsWith('workspace:')) {
-    if (packageJsonPath === undefined) {
-      return null
-    }
-    const resolved = resolveWorkspaceVersion(version, dependencyName, packageJsonPath)
-    if (resolved === undefined) {
-      return null
-    }
-    return {
-      dependencyName,
-      currentVersion: resolved.version,
-      line: offsetToLine(jsonAsString, offset),
-      isWorkspace: true,
-    }
   }
 
   return {

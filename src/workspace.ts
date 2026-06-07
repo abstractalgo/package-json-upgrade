@@ -1,12 +1,6 @@
 import * as fs from 'fs'
 import * as yaml from 'js-yaml'
 import * as path from 'path'
-import { globSync } from 'tinyglobby'
-
-interface WorkspaceCache {
-  packages: Map<string, string>
-  mtime: number
-}
 
 interface CatalogCache {
   catalog: WorkspaceCatalog
@@ -18,7 +12,6 @@ interface WorkspaceCatalog {
   named: Map<string, Map<string, string>>
 }
 
-const workspaceCache = new Map<string, WorkspaceCache>()
 const catalogCache = new Map<string, CatalogCache>()
 const workspaceRootCache = new Map<string, string | undefined>()
 
@@ -57,42 +50,7 @@ export const resolveCatalogVersion = (
   return undefined
 }
 
-export interface WorkspaceVersionResolution {
-  version: string
-  isWorkspace: boolean
-}
-
-export const resolveWorkspaceVersion = (
-  version: string,
-  dependencyName: string,
-  packageJsonPath: string,
-): WorkspaceVersionResolution | undefined => {
-  if (!version.startsWith('workspace:')) {
-    return undefined
-  }
-
-  const workspaceRoot = findPnpmWorkspaceRoot(packageJsonPath)
-  if (workspaceRoot === undefined) {
-    return undefined
-  }
-
-  const workspacePackages = getWorkspacePackages(workspaceRoot)
-  const workspaceVersion = workspacePackages.get(dependencyName)
-  if (workspaceVersion === undefined) {
-    return undefined
-  }
-
-  const explicitSpecifier = version.slice('workspace:'.length)
-
-  if (explicitSpecifier === '*' || explicitSpecifier === '^' || explicitSpecifier === '~') {
-    return { version: workspaceVersion, isWorkspace: true }
-  }
-
-  return { version: explicitSpecifier, isWorkspace: true }
-}
-
 export const clearWorkspaceCache = () => {
-  workspaceCache.clear()
   catalogCache.clear()
   workspaceRootCache.clear()
 }
@@ -116,51 +74,6 @@ const findPnpmWorkspaceRoot = (packageJsonPath: string): string | undefined => {
   return undefined
 }
 
-const getWorkspacePackages = (workspaceRoot: string): Map<string, string> => {
-  const workspaceFile = findWorkspaceFile(workspaceRoot)
-  if (workspaceFile === undefined) {
-    return new Map()
-  }
-
-  const mtime = fs.statSync(workspaceFile).mtimeMs
-  const cache = workspaceCache.get(workspaceRoot)
-
-  if (cache !== undefined && cache.mtime >= mtime) {
-    return cache.packages
-  }
-
-  const content = fs.readFileSync(workspaceFile, 'utf-8')
-  const patterns = parseWorkspacePackages(content)
-  const packages = new Map<string, string>()
-
-  const pkgJsonPaths = globSync(
-    patterns
-      .filter((p) => p.length > 0)
-      .map((p) => {
-        const normalized = p.replace(/\/+$/, '')
-        return `${normalized}/package.json`
-      }),
-    { cwd: workspaceRoot, absolute: true, onlyFiles: true },
-  )
-
-  for (const pkgJsonPath of pkgJsonPaths) {
-    try {
-      const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf-8')) as {
-        name?: string
-        version?: string
-      }
-      if (pkgJson.name !== undefined && pkgJson.version !== undefined) {
-        packages.set(pkgJson.name, pkgJson.version)
-      }
-    } catch {
-      // ignore invalid or unreadable package.json files
-    }
-  }
-
-  workspaceCache.set(workspaceRoot, { packages, mtime })
-  return packages
-}
-
 const findWorkspaceFile = (workspaceRoot: string): string | undefined => {
   for (const ext of ['.yaml', '.yml']) {
     const filePath = path.join(workspaceRoot, `pnpm-workspace${ext}`)
@@ -169,22 +82,6 @@ const findWorkspaceFile = (workspaceRoot: string): string | undefined => {
     }
   }
   return undefined
-}
-
-const parseWorkspacePackages = (content: string): string[] => {
-  try {
-    const parsed = yaml.load(content)
-    if (!isRecord(parsed)) {
-      return []
-    }
-    const packages = parsed.packages
-    if (Array.isArray(packages)) {
-      return packages.filter((p): p is string => typeof p === 'string')
-    }
-  } catch {
-    // ignore invalid yaml
-  }
-  return []
 }
 
 const getWorkspaceCatalog = (workspaceRoot: string): WorkspaceCatalog => {

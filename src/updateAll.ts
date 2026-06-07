@@ -32,8 +32,8 @@ export const updateAll = (textEditor?: vscode.TextEditor): UpdateEdit[] => {
           return
         }
 
-        // Skip workspace/catalog dependencies — the version lives elsewhere
-        if (dep.isWorkspace === true || dep.isCatalog === true) {
+        // Skip catalog dependencies — the version lives elsewhere
+        if (dep.isCatalog === true) {
           return
         }
 

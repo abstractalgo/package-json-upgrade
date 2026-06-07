@@ -4,6 +4,8 @@ All notable changes to the "package-json-upgrade" extension will be documented i
 
 ## Unreleased changes
 
+- Fix so "workspace:" syntax does not display "Dependency not found" message
+
 ## 3.6.0
 
 - Show updates for dependencies using pnpm "workspace:" and "catalog:" protocols
